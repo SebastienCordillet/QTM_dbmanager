@@ -8,6 +8,7 @@ Ceci est un script temporaire.
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
 import numpy as np
+import xarray as xr
 from scipy import signal
 from xmlExtractor import getCropVariable, printDict, printChilds, getEvents, getModelVariable, plotHS
 from pyomeca import Angles
@@ -85,25 +86,55 @@ listVariable =[
 # print(class)
 # print(data[0,0,:])
 
+patientID="patient01( "
 session_angle=[]
-for trials in root:   
-    print(trials.attrib['value']) # ESSAI EN COURS D'ANALYSE
-    events_LHS=getEvents(trials, event='LHS')
-    events_RHS=getEvents(trials, event='RHS')
-    session_angle.append(getModelVariable(trials,listVariable))
+session_cropAngle=[]
+for trial in root:   
+    print()
+    print(trial.attrib['value']) # ESSAI EN COURS D'ANALYSE
+    events_LHS=getEvents(trial, event='LHS')
+    events_RHS=getEvents(trial, event='RHS')
+    current_angle=getModelVariable(trial,listVariable)
+    current_pyomecaAngle=Angles(current_angle)
+    current_pyomecaAngle=current_pyomecaAngle.assign_coords({"channel": listVariable })
+    
+    current_pyomecaAngle=current_pyomecaAngle.assign_attrs({
+        "trial": trial.attrib['value'],
+        "patientID": patientID
+        })
+    session_angle.append(current_pyomecaAngle)
+    
+    #crop Var by Var and cycle by cycle
+    # for var in current_pyomecaAngle['channel']: 
+    #     print(var.values)
+    #     if 'Left' in str(var.values):
+    #         print('récupérer cycle gauche')
+    #         for i in range(len(events_LHS)-1):
+    #             session_cropAngle.append(
+    #                 current_pyomecaAngle.sel(channe)
+    #                 )
+    #     elif 'Right' in str(var.values):
+    #         print('récupérer cycle droite')
+    #     else:
+    #         print('récupérer les deux')
+        
+    
+    
+    
     # plotHS(events_LHS,events_RHS,trials.attrib['value'])
     
-    
-angle = getModelVariable(trials,MV = listVariable, axis= ['X','Y','Z'])
-ANGLES=Angles(angle, dims=("axis", "channel", "time"),
-            coords={
-                "channel": listVariable}
-            )
-# ANGLES.assign_coords({
-#     'axis': ['X','Y','Z']
-#     })
-print(ANGLES.coords)
-# print(ANGLES)
+   
+#transformation en dataset
+# dataset_angle=xr.concat(session_angle, dim='trial')# ca ne marche pas car pas même durée
+# print(session_angle)        
+
+
+# angle = getModelVariable(trial,MV = listVariable, axis= ['X','Y','Z'])
+# ANGLES=Angles(angle) #pour créer un obj angles pyomeca
+# ANGLES= ANGLES.assign_coords({"channel": listVariable })
+
+
+
 # printChilds(root[0]) #CORRESPOND AU PREMIER ESSAI
 # OUT
 # type {'value': 'ANALOG'}
@@ -124,7 +155,8 @@ print(ANGLES.coords)
 # name {'value': 'start'}
 
 # printChilds(root[0][1][0][0])
-      
+
+# ESSAI pour récupérer un angle et l'afficher      
 # print(getEvents(root[0], event='RHS')) #RENVOI BIEN LES EVENEMTNS
 # angle=getModelVariable(root[0], MV='Left Ankle Angles_CGM', axis='X')
 # plt.plot(angle)
@@ -132,7 +164,7 @@ print(ANGLES.coords)
 # plt.show()
 
 
-
+# ESSAI pour afficher un angle normalize sur le cycle de marche
 # LHS=getEvents(root[0], event='LHS')
 # LHS_frame=np.rint(LHS*150).astype(int)
 # crop = getCropVariable(angle,LHS_frame)
