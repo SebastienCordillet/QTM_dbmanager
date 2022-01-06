@@ -129,7 +129,51 @@ def getModelVariable(xmlroot, MV = 'Left Ankle Moment', axis='X'):
                         # print(MV.index(mv))
                         data[axis.index(dim.attrib['value']),MV.index(mv),:]=np.fromstring(dim.attrib["data"].replace('nodata','nan'), sep=',').T
     return(data)           
+
+def QTMsessionDataAsCrop(xmlfile, listVariable, name="patient01",session="06/01/2022", condition="unspecified", fr=150):
+    import xml.etree.ElementTree as ET
+    import pandas as pd
+    import numpy as np
+
+    tree = ET.parse(xmlfile)
+    root = tree.getroot()
+    
+    session_cropAngle=pd.DataFrame()
+    
+    for trial in root:   
+        # print()
+        # print(trial.attrib['value']) # ESSAI EN COURS D'ANALYSE
+        events_LHS=getEvents(trial, event='LHS')
+        events_RHS=getEvents(trial, event='RHS')
+        current_angle=getModelVariable(trial,listVariable)
+        
+        for i in range(current_angle.shape[1]):
+            # print(listVariable[i])
+            var = current_angle[0,i,:]
+            if 'Left' in listVariable[i]:
+                # print('crop left side')
+                cur_event=np.rint(events_LHS*fr).astype(int)
+                txt= listVariable[i].replace('Left ','')
+                side='Left'
+            elif 'Right' in listVariable[i]:
+                # print('crop right side')
+                cur_event=np.rint(events_RHS*fr).astype(int)
+                txt= listVariable[i].replace('Right ','')
+                side='Right'
                 
+            if len(cur_event)>2:
+                crop= getCropVariable(var,cur_event)
+                crop_df=pd.DataFrame(data=crop)
+                crop_df['Variable']=txt
+                crop_df['Side']=side
+                crop_df['trial']=trial.attrib['value']
+                session_cropAngle=session_cropAngle.append(crop_df)
+    session_cropAngle['name']=name
+    session_cropAngle['session']=session
+    session_cropAngle['condition']=condition
+    
+    return(session_cropAngle)
+             
 # def pyomecaAnglesFromQTMxml(xml)                
     # return('fsin')       
         # print(child.attrib['value'])

@@ -6,117 +6,73 @@ Ceci est un script temporaire.
 """
 
 import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
-from scipy import signal
-from xmlExtractor import getCropVariable, printDict, printChilds, getEvents, getModelVariable, plotHS
-from pyomeca import Angles
+import pandas as pd
+# from scipy import signal
+from xmlExtractor import printChilds, QTMsessionDataAsCrop
+from tkinter import filedialog
 
-tree = ET.parse('session_data.xml')
-root = tree.getroot()
-
-
-# listVariable =dict([
-#     ('Left Ankle Angles_CGM','LHS'),
-#     ('Left Ankle Moment','LHS'),
-#     ('Left Ankle Power','LHS'),
-#     ('Left Foot Pitch Angles','LHS'),
-#     ('Left Foot Progression','LHS'),
-#     ('Left Hip Angles','LHS'),
-#     ('Left Hip Moment','LHS'),
-#     ('Left Hip Power','LHS'),
-#     ('Left Knee Angles','LHS'),
-#     ('Left Knee Moment','LHS'),
-#     ('Left Knee Power','LHS'),
-#     ('Left Pelvic Angles','LHS'),
-#     ('PelvisPos','LHS'),
-#     ('Right Ankle Angles_CGM','RHS'),
-#     ('Right Ankle Moment','RHS'),
-#     ('Right Ankle Power','RHS'),
-#     ('Right Foot Pitch Angles','RHS'),
-#     ('Right Foot Progression','RHS'),
-#     ('Right GRF','RHS'),
-#     ('Right Hip Angles','RHS'),
-#     ('Right Hip Moment','RHS'),
-#     ('Right Hip Power','RHS'),
-#     ('Right Knee Angles','RHS'),
-#     ('Right Knee Moment','RHS'),
-#     ('Right Knee Power','RHS'),
-#     ('Right Pelvic Angles','RHS')
-#     ])
 
 listVariable =[
-    'Left Ankle Angles_CGM',
-    'Left Ankle Moment',
-    'Left Ankle Power',
-    'Left Foot Pitch Angles',
-    'Left Foot Progression',
-    'Left Hip Angles',
-    'Left Hip Moment',
-    'Left Hip Power',
+    # 'Left Ankle Angles_CGM',
+    # 'Left Ankle Moment',
+    # 'Left Ankle Power',
+    # 'Left Foot Pitch Angles',
+    # 'Left Foot Progression',
+    # 'Left Hip Angles',
+    # 'Left Hip Moment',
+    # 'Left Hip Power',
     'Left Knee Angles',
     'Left Knee Moment',
     'Left Knee Power',
-    'Left Pelvic Angles',
-    'PelvisPos',
-    'Right Ankle Angles_CGM',
-    'Right Ankle Moment',
-    'Right Ankle Power',
-    'Right Foot Pitch Angles',
-    'Right Foot Progression',
-    'Right GRF',
-    'Right Hip Angles',
-    'Right Hip Moment',
-    'Right Hip Power',
+    # 'Left Pelvic Angles',
+    # 'PelvisPos',
+    # 'Right Ankle Angles_CGM',
+    # 'Right Ankle Moment',
+    # 'Right Ankle Power',
+    # 'Right Foot Pitch Angles',
+    # 'Right Foot Progression',
+    # 'Right GRF',
+    # 'Right Hip Angles',
+    # 'Right Hip Moment',
+    # 'Right Hip Power',
     'Right Knee Angles',
     'Right Knee Moment',
     'Right Knee Power',
-    'Right Pelvic Angles',
+    # 'Right Pelvic Angles',
     ]
 
-# printDict(listVariable) #DEBUG 
 
-# printChilds(root) list les essais
-# OUT
-# owner {'value': 'Gait LB - CGM 1.c3d'}
-# owner {'value': 'Gait LB - CGM 3.c3d'}
-# owner {'value': 'Gait LB - CGM 6.c3d'}
-# data = np.random.random(size=(1, 1, 100))
-# print(class)
-# print(data[0,0,:])
+       
+path2Protocol='U:\DRI\prj_recurvatum\db_protocol.xml'
+tree2 = ET.parse(path2Protocol)
+root2= tree2.getroot()        
+printChilds(root2.find('Database'))
 
-patientID="patient01( "
-session_angle=[]
-session_cropAngle=[]
-for trial in root:   
-    print()
-    print(trial.attrib['value']) # ESSAI EN COURS D'ANALYSE
-    events_LHS=getEvents(trial, event='LHS')
-    events_RHS=getEvents(trial, event='RHS')
-    current_angle=getModelVariable(trial,listVariable)
-    current_pyomecaAngle=Angles(current_angle)
-    current_pyomecaAngle=current_pyomecaAngle.assign_coords({"channel": listVariable })
+process=root2.find('Process')
+listVariable2=(var.attrib['name'] for var in root2.find('Process').findall('Variable'))
+
+#Initialisation de la base de donnée 
+db=pd.DataFrame()
+for patient in root2.find('Database').findall('Patient'):
+    print('--------')
+    print(patient.attrib['Folder'])
+    printChilds(patient)
+    for session in patient.findall('Session'):
+        printChilds(session)
+        for condition in session.findall('Condition'):
+            print(condition.find('BiomechanicsData').text)
+            filePath=[root2.find('Database').attrib['Path'],
+                      patient.attrib['Folder'],
+                      session.attrib['Folder'],
+                      condition.attrib['Folder'],
+                      condition.find('BiomechanicsData').text.replace('"','')]
+            current_cond=QTMsessionDataAsCrop("\\".join(filePath), listVariable)
+            db=db.append(current_cond)          
+                      
+            
+
+
     
-    current_pyomecaAngle=current_pyomecaAngle.assign_attrs({
-        "trial": trial.attrib['value'],
-        "patientID": patientID
-        })
-    session_angle.append(current_pyomecaAngle)
-    
-    #crop Var by Var and cycle by cycle
-    # for var in current_pyomecaAngle['channel']: 
-    #     print(var.values)
-    #     if 'Left' in str(var.values):
-    #         print('récupérer cycle gauche')
-    #         for i in range(len(events_LHS)-1):
-    #             session_cropAngle.append(
-    #                 current_pyomecaAngle.sel(channe)
-    #                 )
-    #     elif 'Right' in str(var.values):
-    #         print('récupérer cycle droite')
-    #     else:
-    #         print('récupérer les deux')
         
     
     
