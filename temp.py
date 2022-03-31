@@ -9,12 +9,13 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 # from scipy import signal
 from xmlExtractor import printChilds, QTMsessionDataAsCrop
-from tkinter import filedialog
+# from tkinter import filedialog
 
 
 
 
        
+# path2Protocol='U:\DRI\prj_recurvatum\db_protocol.xml'
 path2Protocol='U:\DRI\prj_recurvatum\db_protocol.xml'
 tree2 = ET.parse(path2Protocol)
 root2= tree2.getroot()        
@@ -42,7 +43,7 @@ for patient in root2.find('Database').findall('Patient'):
             db=db.append(current_cond)          
                       
             
-
+db.to_excel('db.xlsx')
 
     
         
